@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
-import DatePicker from 'react-datepicker';
+import './App.css'
 import "react-datepicker/dist/react-datepicker.css"
 
+import { useEffect, useState } from 'react'
+import DatePicker from 'react-datepicker';
+
 import MapSection from './components/MapSection/MapSection'
-import './App.css'
+
+import validate from './Validation/validation'
 
 interface LatLngInterface{
   latitude: number | undefined;
@@ -32,8 +35,7 @@ function App() {
     date: new Date(),
     stringDate: ""
   })
-
-  const [valid, isValid]=useState<boolean|undefined>(undefined);
+  const [valid, isValid]=useState<string|null>(null);
   const today= new Date()
 
 
@@ -45,16 +47,19 @@ function App() {
 
   useEffect(()=>{
     if(latlng.latitude!=undefined){
-    fetchData()
+        fetchData()
     }
   },[latlng])
 
   async function fetchLatlng(){
     try{
-    await fetch(`https://api.postcodes.io/postcodes/${form.postcode}`)
-    .then(res => res.json())
-    .then(data=> setLatlng(data.result))
-    
+      const response = await fetch(`https://api.postcodes.io/postcodes/${form.postcode}`)
+      if(!response.ok){
+        setError(`There was an error: ${response.status}`)
+      } else{
+        const data  = await response.json()
+        setLatlng(data.result)
+      }
     } catch(error){
       setError(`Something went wrong: ${error}`)
       throw new Error(`Something went wrong: ${error}`)
@@ -63,16 +68,18 @@ function App() {
 
   async function fetchData() {
     try{
-    await fetch(`https://data.police.uk/api/crimes-street/all-crime?date=${form.stringDate}&lat=${latlng.latitude}&lng=${latlng.longitude}`)
-    .then(res=>res.json())
-    .then(data=> {
-      if (data.length>101){
-        setCrimes(data.slice(0,10))
+      const response = await fetch(`https://data.police.uk/api/crimes-street/all-crime?date=${form.stringDate}&lat=${latlng.latitude}&lng=${latlng.longitude}`)
+      if (!response.ok){
+        setError(`There was an error: ${response.status}`)
       } else {
-        setCrimes(data)
-      }
-    })      
-      
+        const data = await response.json()
+        console.log(data[0])
+        if (data.length>11){
+          setCrimes(data.silce(0,10))
+        } else {
+          setCrimes(data.result)
+        }
+      }     
     } catch(error){
       setError(`Something went wrong: ${error}`)
       throw new Error(`Something went wrong: ${error}`)
@@ -89,26 +96,25 @@ function App() {
   }
 
   function handleSearch(){
-    const year = form.date.getFullYear()
-    const month = form.date.getMonth()+1
-    let output = ""
-    if(month<10){
-      output = year+"-0"+month
-    } else{
-      output = year+"-"+month
-    }
-    setForm({
-      ...form,
-      stringDate: output
-    })
 
-    if (form.postcode===""){
-      isValid(false)
-    }else{
-      isValid(true)
+    if(validate(form.postcode, form.date)){
+      if(form.date.getMonth()+1<10){
+        setForm({
+          ...form,
+          stringDate: `${form.date.getFullYear()}-0${form.date.getMonth()+1}`
+        })
+      } else {
+        setForm({
+          ...form,
+          stringDate: `${form.date.getFullYear()}-${form.date.getMonth()+1}`
+        })
+      }
+      setTrigger(!trigger)
+      setError(null)
+      isValid(null)
+    } else {
+      isValid(`Something is wrong, please ensure the postcode is correct and the date is older than ${today.getMonth()+1}\\01\\${today.getFullYear()}`)
     }
-    setTrigger(!trigger)
-    setError(null)
   }
 
   return (
@@ -123,7 +129,7 @@ function App() {
         <label>Choose a date</label>
         <DatePicker selected={form.date} onChange={(date)=>handleDateSelect(date)} endDate={today}/>
         <button onClick={handleSearch}>Search</button> 
-        {valid ===false?<p>Please enter a postcode</p>:null}
+        {valid === null?null:<p>{valid}</p>}
       </div>
 
       <div className='map'>
