@@ -1,0 +1,46 @@
+@import 'leaflet/dist/leaflet.css';
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.centre{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items:  center;
+}
+
+.header{
+  position: absolute;
+  top: 50px;
+}
+
+.main{
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-bottom: 0.5rem;
+
+}
+
+.map{
+  width: 400px;
+  height: 200px;
+}
+
+.footer{
+  position: absolute;
+  bottom: 50px;
+  font-size: large;
+  font-weight: 700;
+  text-decoration-line: underline;
+}
+
+.error{
+  color: red
+}
+
